@@ -1,0 +1,3 @@
+# pygame-ce is a drop-in fork of pygame with wheels for current Python versions (3.14 included).
+# Classic "pygame>=2.4" also works on Python <= 3.13.
+pygame-ce>=2.5

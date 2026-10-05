@@ -29,22 +29,18 @@
 - 📊 **Real-time statistics panel** showing nodes searched, decision time and a win checkbox for each algorithm.
 - ⚡ **Batch mode** to benchmark all agents sequentially without user interaction.
 - 🖱️ **Clickable buttons** to toggle each agent or start/stop the batch run directly from the GUI.
-- 🛠 **Parameter sliders** *(coming soon)* – quickly adjust depths / simulation counts without editing code.
 
 ## Demo<a name="demo"></a>
-*A demo GIF/Screenshot can be placed here.*  
-If you record a short GIF, save it as `docs/demo.gif` and embed it like:
-```md
-![Game demo](docs/demo.gif)
-```
-*(Remote images are stripped out in some environments, so keep it local.)*
+![Expectimax agent mid-game](docs/demo.png)
+
+*Expectimax (depth 4) playing on its own – the right-hand panel tracks nodes searched, cumulative decision time and whether each agent has reached 2048 this session.*
 
 ---
 
 ## Installation<a name="installation"></a>
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/<your_user>/2048-Solver.git
+   git clone https://github.com/Tarmk/2048-Solver.git
    cd 2048-Solver
    ```
 2. **Create a virtual environment** *(optional but recommended)*
@@ -54,9 +50,9 @@ If you record a short GIF, save it as `docs/demo.gif` and embed it like:
    ```
 3. **Install dependencies**
    ```bash
-   pip install -r requirements.txt  # or simply: pip install pygame
+   pip install -r requirements.txt
    ```
-   Only `pygame` (≥ 2.0) is required.  The AI code uses standard-library modules only.
+   The only dependency is `pygame-ce` (a drop-in pygame fork with wheels for current Python versions, 3.14 included). Classic `pygame>=2.4` works too on Python ≤ 3.13. The AI code uses standard-library modules only.
 
 ---
 
@@ -124,8 +120,9 @@ Experiment and find a good balance for your machine.
 ## Troubleshooting<a name="troubleshooting"></a>
 | Problem | Fix |
 |---------|-----|
-| *`ModuleNotFoundError: No module named 'pygame'`* | Make sure you ran `pip install pygame` inside the activated environment. |
-| Pygame window is blank / freezes on macOS Sonoma | Ensure you are using Python 3.11+ and Pygame ≥ 2.4.  If the problem persists try `brew install sdl2` and reinstall `pygame`. |
+| *`ModuleNotFoundError: No module named 'pygame'`* | Make sure you ran `pip install -r requirements.txt` inside the activated environment. |
+| `pip` tries to *build* pygame from source and fails | Your Python is newer than the last classic pygame wheel – install `pygame-ce` instead (that is what `requirements.txt` does). |
+| Pygame window is blank / freezes on macOS Sonoma | Ensure you are using Python 3.11+ and pygame-ce ≥ 2.5.  If the problem persists try `brew install sdl2` and reinstall. |
 | High CPU usage | Lower the search depth or the number of simulations. |
 
 ---
@@ -135,10 +132,10 @@ Pull requests are very welcome!  Feel free to open an issue to discuss bugs, fea
 
 1. Fork 🍴, clone, create a branch.
 2. Make your changes (please keep each PR focused).
-3. Run `python -m flake8` – we aim for a clean lint.
+3. Check the game still runs (`python 2048.py`) and the AI buttons still work.
 4. Submit PR and describe *what* and *why*.
 
 ---
 
 ## License & Acknowledgements<a name="license--acknowledgements"></a>
-This project is **MIT-licensed**.  Original 2048 concept by **[Gabriele Cirulli](https://gabrielecirulli.com/)**.  UI style inspired by the open-source community.
+This project is **MIT-licensed** (see [LICENSE](LICENSE)).  Original 2048 concept by **[Gabriele Cirulli](https://gabrielecirulli.com/)**.  UI style inspired by the open-source community.

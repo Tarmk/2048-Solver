@@ -881,6 +881,10 @@ class Game2048:
     
     def update(self, dt: float):
         """Update game state"""
+        # Keep the best score in sync with the current score
+        if self.score > self.best_score:
+            self.best_score = self.score
+
         # Update tile animations
         for tile in self.tiles:
             tile.update_animation(dt)
@@ -989,20 +993,20 @@ class Game2048:
         if self.ai_enabled and self.show_ai_info and self.ai_type:
             ai_text = self.font_medium.render(
                 f"AI: {self.ai_type.upper()}", True, TEXT_DARK)
-            self.screen.blit(ai_text, (WINDOW_WIDTH - 150, 20))
+            self.screen.blit(ai_text, (WINDOW_WIDTH - 270, 20))
             
             if self.current_evaluation is not None:
                 eval_text = self.font_small.render(
                     f"Eval: {self.current_evaluation:.1f}", True, TEXT_DARK)
-                self.screen.blit(eval_text, (WINDOW_WIDTH - 150, 60))
+                self.screen.blit(eval_text, (WINDOW_WIDTH - 270, 60))
             
             depth_text = self.font_small.render(
                 f"Depth: {self.current_depth}/{self.minimax_depth}", True, TEXT_DARK)
-            self.screen.blit(depth_text, (WINDOW_WIDTH - 150, 90))
+            self.screen.blit(depth_text, (WINDOW_WIDTH - 270, 90))
             
             nodes_text = self.font_small.render(
                 f"Nodes: {self.nodes_explored}", True, TEXT_DARK)
-            self.screen.blit(nodes_text, (WINDOW_WIDTH - 150, 120))
+            self.screen.blit(nodes_text, (WINDOW_WIDTH - 270, 120))
         
         # Draw AI mode buttons
         for btn in self.buttons:
