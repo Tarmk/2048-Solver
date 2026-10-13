@@ -10,7 +10,22 @@ Play 2048 yourself, or watch four search agents play it: **Expectimax**, **Minim
 
 ## Results
 
-BENCHMARK_TABLE
+Every agent played 20 full games (seeds 0 to 19, so all agents get the same starting spawns) on my desktop: AMD Zen 5 CPU, Python 3.14, eight games at a time.
+
+| Agent | Reached 2048 | Median score | Highest tile reached (games) | Time per move | Nodes per move |
+|---|---|---|---|---|---|
+| **Expectimax** | **20 / 20** | **133,922** | 16384 (1), 8192 (13), 4096 (5), 2048 (1) | 27 ms | 3,581 |
+| MCTS | 18 / 20 | 36,138 | 4096 (2), 2048 (16), 1024 (2) | 52 ms | 1,159 |
+| Minimax | 10 / 20 | 18,966 | 2048 (10), 1024 (6), 512 (3), 256 (1) | 0.6 ms | 267 |
+| Minimax, no pruning | 10 / 20 | 18,966 | same games as Minimax | 2.5 ms | 1,625 |
+| Greedy (one ply) | 0 / 20 | 4,564 | 512 (9), 256 (11) | <0.1 ms | 4 |
+| Random | 0 / 20 | 1,046 | 256 (1), 128 (10), 64 (8), 16 (1) | <0.1 ms | 3 |
+
+- **Expectimax is the strongest** because it models the spawn honestly: tiles appear at random, not where they hurt most. It made 2048 in every game and 8192 in 14 of 20.
+- **Minimax plays too defensively.** It assumes the worst tile always lands in the worst cell, which is not how 2048 works.
+- **Alpha-beta pruning is free strength.** With and without pruning, Minimax played identical games, but pruning needed about 6× fewer nodes per move.
+
+Reproduce with `python -m solver2048.bench -n 20 -j 8 --markdown`.
 
 ## How it works
 
@@ -24,7 +39,7 @@ BENCHMARK_TABLE
 |---|---|---|
 | Expectimax | Max nodes for the player. Chance nodes average over every empty cell and both spawn values (2 at 90%, 4 at 10%). Branches less likely than 1 in 10,000 are cut, and chance nodes are cached within a move. | 2 plies, 3 when 3 or fewer cells are empty |
 | Minimax | Treats the tile spawn as an opponent that always places the worst tile. Moves are ordered by the heuristic so alpha-beta cuts early. | 2 plies |
-| Minimax, no pruning | Same search without alpha-beta. It picks the same moves, but searches roughly ten times as many nodes. | 2 plies |
+| Minimax, no pruning | Same search without alpha-beta: same decisions, about 6× the nodes. | 2 plies |
 | MCTS | Open-loop UCT: the tree stores move sequences, and random spawns are re-sampled on every iteration. Rollouts are random. | 300 iterations, 20-move rollouts |
 | Greedy, Random | Baselines for the benchmark (one-ply heuristic and uniform random). | |
 
