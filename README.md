@@ -1,141 +1,97 @@
-# 2048 Solver with AI Agents (Pygame)
+# 2048 Solver
 
-<div align="center">
-  
-**Play manually … or let four different AI agents battle it out for you!**  
+[![CI](https://github.com/Tarmk/2048-Solver/actions/workflows/ci.yml/badge.svg)](https://github.com/Tarmk/2048-Solver/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.10%E2%80%933.14-3776ab)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-</div>
+Play 2048 yourself, or watch four search agents play it: **Expectimax**, **Minimax with alpha-beta pruning**, **plain Minimax** (to show what pruning saves) and **Monte Carlo Tree Search**. A headless benchmark plays full games and compares them.
 
----
+![Expectimax mid-game, with the per-agent stats table on the right](docs/demo.png)
 
-## Table of Contents
-1. [Features](#features)
-2. [Demo Video / Screenshot](#demo)
-3. [Installation](#installation)
-4. [Running the Game](#running-the-game)
-5. [Controls](#controls)
-6. [AI Agents](#ai-agents)
-7. [Live Metrics Panel](#live-metrics-panel)
-8. [Tuning the Difficulty](#tuning-the-difficulty)
-9. [Troubleshooting](#troubleshooting)
-10. [Contributing](#contributing)
-11. [License & Acknowledgements](#license--acknowledgements)
+## Results
 
----
+BENCHMARK_TABLE
 
-## Features<a name="features"></a>
-- 🎮 **Full 2048 gameplay** with smooth animations and polished UI (rounded tiles, drop shadows, etc.).
-- 🤖 **Four built-in AI agents** (Minimax, Expectimax, Monte-Carlo Tree Search, and Naïve Minimax) that can play the game for you.
-- 📊 **Real-time statistics panel** showing nodes searched, decision time and a win checkbox for each algorithm.
-- ⚡ **Batch mode** to benchmark all agents sequentially without user interaction.
-- 🖱️ **Clickable buttons** to toggle each agent or start/stop the batch run directly from the GUI.
+## How it works
 
-## Demo<a name="demo"></a>
-![Expectimax agent mid-game](docs/demo.png)
+**Bitboard engine** ([`solver2048/board.py`](solver2048/board.py)). The board is a single 64-bit integer, four bits per cell, holding the tile's exponent (`11` means 2048). All 65,536 possible rows are slid once at import time and stored in lookup tables, so a move is four table lookups. Up and down transpose the board with a few bit operations and reuse the left/right tables. The engine is tested against a plain list-based implementation on thousands of random boards.
 
-*Expectimax (depth 4) playing on its own – the right-hand panel tracks nodes searched, cumulative decision time and whether each agent has reached 2048 this session.*
+**Evaluation** ([`solver2048/heuristics.py`](solver2048/heuristics.py)). Rewards empty cells and adjacent equal tiles, penalises rows and columns that are not monotonic, and lightly penalises the tile sum so merging is preferred. The weights come from [Robert Xiao's 2048 AI](https://github.com/nneonneo/2048-ai). The heuristic is also precomputed per row, so scoring a board is eight lookups.
 
----
+**Agents** ([`solver2048/agents.py`](solver2048/agents.py)):
 
-## Installation<a name="installation"></a>
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Tarmk/2048-Solver.git
-   cd 2048-Solver
-   ```
-2. **Create a virtual environment** *(optional but recommended)*
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # on Windows: venv\Scripts\activate
-   ```
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-   The only dependency is `pygame-ce` (a drop-in pygame fork with wheels for current Python versions, 3.14 included). Classic `pygame>=2.4` works too on Python ≤ 3.13. The AI code uses standard-library modules only.
+| Agent | Idea | Default setting |
+|---|---|---|
+| Expectimax | Max nodes for the player. Chance nodes average over every empty cell and both spawn values (2 at 90%, 4 at 10%). Branches less likely than 1 in 10,000 are cut, and chance nodes are cached within a move. | 2 plies, 3 when 3 or fewer cells are empty |
+| Minimax | Treats the tile spawn as an opponent that always places the worst tile. Moves are ordered by the heuristic so alpha-beta cuts early. | 2 plies |
+| Minimax, no pruning | Same search without alpha-beta. It picks the same moves, but searches roughly ten times as many nodes. | 2 plies |
+| MCTS | Open-loop UCT: the tree stores move sequences, and random spawns are re-sampled on every iteration. Rollouts are random. | 300 iterations, 20-move rollouts |
+| Greedy, Random | Baselines for the benchmark (one-ply heuristic and uniform random). | |
 
----
+In the Pygame app the search runs on a worker thread, so the window stays responsive while an agent thinks.
 
-## Running the Game<a name="running-the-game"></a>
+## Running it
+
+Python 3.10 or newer.
+
 ```bash
-python 2048.py
+git clone https://github.com/Tarmk/2048-Solver.git
+cd 2048-Solver
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt  # only pygame-ce
+python -m solver2048             # or: python 2048.py
 ```
-A window opens with a 4×4 grid just like the original 2048 game.
 
----
+`python -m solver2048 --agent expectimax --seed 1` starts with an agent already playing.
 
-## Controls<a name="controls"></a>
-### Human
+### Controls
+
 | Key | Action |
-|-----|--------|
-| ← ↑ ↓ → | Move tiles |
-| **R** | Reset the current board |
+|---|---|
+| Arrow keys / WASD | Move (when no agent is playing) |
+| E / M / B / N | Start or stop Expectimax / Minimax / Minimax without pruning / MCTS |
+| Tab | Batch run: each agent plays one game until it makes 2048 |
+| + / - | Faster / slower agent moves |
+| R | New game |
+| Esc | Quit |
 
-### AI & Utility
-| Key | Action |
-|-----|--------|
-| **M** | Toggle **Minimax** agent |
-| **E** | Toggle **Expectimax** agent |
-| **N** | Toggle **MCTS** agent |
-| **B** | Toggle **Naïve Minimax** agent |
-| **A** | Start / stop **batch mode** (runs all agents sequentially) |
+Buttons on the right do the same as the keys. The table under them tracks moves, nodes searched per move, thinking time per move and best tile for each agent during the session.
 
-*(The same actions are available through on-screen buttons.)*
+### Benchmark
 
----
+```bash
+python -m solver2048.bench                         # every agent, 10 games each
+python -m solver2048.bench -a expectimax -n 50 -j 4  # one agent, 50 games, 4 processes
+python -m solver2048.bench --markdown              # Markdown table, as above
+```
 
-## AI Agents<a name="ai-agents"></a>
-| Agent | Strategy | Adjustable Parameter |
-|-------|----------|----------------------|
-| **Minimax** | Two-player adversarial search with alpha–beta pruning | `self.minimax_depth` |
-| **Expectimax** | Chance nodes model random tile spawns | `self.expectimax_depth` |
-| **MCTS** | Monte-Carlo Tree Search with UCT | `self.base_mcts_simulations` |
-| **Naïve Minimax** | Same as Minimax but **without pruning** (for comparison) | `self.minimax_depth` |
+Game *i* uses seed *i*, so every agent gets the same random spawns and runs are reproducible.
 
-> All parameters live in `Game2048.__init__` – tweak them and instantly see the effect on playing strength and speed.
+## Project layout
 
----
+```
+solver2048/
+  board.py       bitboard engine: moves, spawns, conversions
+  heuristics.py  board evaluation (precomputed per row)
+  agents.py      Expectimax, Minimax, MCTS, Greedy, Random
+  game.py        headless game loop shared by the UI and the benchmark
+  bench.py       benchmark CLI
+  ui.py          Pygame front-end
+tests/           pytest: engine against a reference implementation, agent behaviour
+2048.py          launcher kept for `python 2048.py`
+```
 
-## Live Metrics Panel<a name="live-metrics-panel"></a>
-A sidebar tracks for each agent:
-- **Nodes** searched so far
-- **Cumulative decision time** (seconds)
-- **Win checkbox** – ticks itself automatically when the agent ever reaches 2048 in the current session (you can also toggle it manually).
+## Development
 
----
+```bash
+pip install -r requirements-dev.txt
+pytest
+ruff check . && ruff format --check .
+```
 
-## Tuning the Difficulty<a name="tuning-the-difficulty"></a>
-Increasing the search depth or the number of simulations will make an agent stronger **but** also more CPU-intensive.
+CI runs the tests on Python 3.10, 3.12 and 3.13, a short benchmark, and a headless run of the Pygame app.
 
-| Parameter | Typical Range | Effect |
-|-----------|---------------|--------|
-| `self.minimax_depth` | 3-6 | +1 depth ≈ 4× nodes |
-| `self.expectimax_depth` | 3-5 | Similar to Minimax |
-| `self.base_mcts_simulations` | 50-400 | Linear in simulations |
+## License
 
-Experiment and find a good balance for your machine.
-
----
-
-## Troubleshooting<a name="troubleshooting"></a>
-| Problem | Fix |
-|---------|-----|
-| *`ModuleNotFoundError: No module named 'pygame'`* | Make sure you ran `pip install -r requirements.txt` inside the activated environment. |
-| `pip` tries to *build* pygame from source and fails | Your Python is newer than the last classic pygame wheel – install `pygame-ce` instead (that is what `requirements.txt` does). |
-| Pygame window is blank / freezes on macOS Sonoma | Ensure you are using Python 3.11+ and pygame-ce ≥ 2.5.  If the problem persists try `brew install sdl2` and reinstall. |
-| High CPU usage | Lower the search depth or the number of simulations. |
-
----
-
-## Contributing<a name="contributing"></a>
-Pull requests are very welcome!  Feel free to open an issue to discuss bugs, feature ideas or algorithm tweaks.
-
-1. Fork 🍴, clone, create a branch.
-2. Make your changes (please keep each PR focused).
-3. Check the game still runs (`python 2048.py`) and the AI buttons still work.
-4. Submit PR and describe *what* and *why*.
-
----
-
-## License & Acknowledgements<a name="license--acknowledgements"></a>
-This project is **MIT-licensed** (see [LICENSE](LICENSE)).  Original 2048 concept by **[Gabriele Cirulli](https://gabrielecirulli.com/)**.  UI style inspired by the open-source community.
+MIT, see [LICENSE](LICENSE). 2048 was created by [Gabriele Cirulli](https://github.com/gabrielecirulli/2048).

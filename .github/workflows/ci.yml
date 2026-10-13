@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: pytest -q
+      - name: Benchmark smoke test (short games)
+        run: python -m solver2048.bench -n 2 --max-moves 150 --markdown -q >> "$GITHUB_STEP_SUMMARY"
+      - name: UI smoke test (headless)
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          python - <<'PY'
+          import time
+          from solver2048.ui import App
+          app = App(seed=1, agent="expectimax")
+          app.delay_index = 0
+          end = time.time() + 5
+          while time.time() < end:
+              app.handle_events(); app.update_agent(); app.draw(); app.clock.tick(60)
+          assert app.stats["expectimax"].moves > 0, "the agent never moved"
+          print("moves played:", app.stats["expectimax"].moves)
+          PY

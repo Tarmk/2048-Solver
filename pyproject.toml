@@ -1,0 +1,33 @@
+[project]
+name = "solver2048"
+version = "2.0.0"
+description = "2048 with a bitboard engine and Expectimax, Minimax and MCTS agents"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Krittaphas Kunkhongkaphan" }]
+requires-python = ">=3.10"
+dependencies = ["pygame-ce>=2.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.scripts]
+solver2048 = "solver2048.ui:main"
+solver2048-bench = "solver2048.bench:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["solver2048"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
