@@ -24,6 +24,7 @@ packages = ["solver2048"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 120
